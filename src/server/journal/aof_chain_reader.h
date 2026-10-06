@@ -47,6 +47,18 @@ class AofChainReader : public io::Source {
     return discarded_bytes_;
   }
 
+  // ReadSome() reached the end of the log, cleanly or at a damaged tail.
+  bool AtEnd() const {
+    return end_ != End::kNotYet;
+  }
+
+  // Seq of the segment that resumes the log: right after the one where the log ends. Valid once
+  // the end was reached.
+  uint64_t NextSeq() const {
+    const Segment& end = AllSegmentsRead() ? segment_chain_.back() : segment_chain_[read_seg_id_];
+    return end.seq + 1;
+  }
+
  private:
   struct Segment {
     uint64_t seq;

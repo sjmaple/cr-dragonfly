@@ -2004,4 +2004,8 @@ AtomicMemoryScope::~AtomicMemoryScope() {
   DeductFromTxScope(delta);
 }
 
+void SetNextTxIdAtLeast(TxId next) {
+  op_seq = max(op_seq.load(), next);
+}
+
 }  // namespace dfly
