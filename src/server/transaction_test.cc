@@ -341,6 +341,31 @@ TEST_F(TransactionTest, OptimisticFastPathSkipsLockTable) {
       << "fast path should run inline without ever registering an intent lock";
 }
 
+// A hop that runs inline on the coordinator's own fiber has nobody waiting for it, so it must not
+// arm the run barrier. GetOpArgs must still accept it, because the transaction is running_tx().
+TEST_F(TransactionTest, InlineHopSkipsRunBarrier) {
+  ASSERT_EQ(0u, Shard("a", shard_set->size()));
+
+  static CommandId cid{"tx_test_inline", 0, -1, 1, -1, acl::NONE};
+  auto tx = MakeTx(&cid, {"a"});
+
+  bool barrier_idle_during_cb = false;
+  uint64_t inline_runs = OnShard(0, [&] {
+    uint64_t before = ServerState::tlocal()->stats.tx_inline_runs;
+    tx->Execute(
+        [&](Transaction* t, EngineShard* shard) {
+          t->GetOpArgs(shard);
+          barrier_idle_during_cb = t->Blocker()->IsCompleted();
+          return OpStatus::OK;
+        },
+        true);
+    return ServerState::tlocal()->stats.tx_inline_runs - before;
+  });
+
+  ASSERT_EQ(1u, inline_runs) << "the hop was expected to run inline";
+  EXPECT_TRUE(barrier_idle_during_cb) << "an inline hop armed the run barrier";
+}
+
 // Verifies Tasks 2.2/2.3/2.4 of issue #7458: while a transaction (Z) is mid-callback (running_tx_
 // set, simulating a preemption) and never registered a real lock for its own key (fast path), a
 // new *conflicting* transaction (W) scheduling on the same shard must lazily register Z's lock on

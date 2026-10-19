@@ -35,21 +35,12 @@ DbSlice& Namespace::GetCurrentDbSlice() {
   return GetDbSlice(es->shard_id());
 }
 
-DbSlice& Namespace::GetDbSlice(ShardId sid) {
-  CHECK_LT(sid, shard_db_slices_.size());
-  return *shard_db_slices_[sid];
-}
-
 BlockingController* Namespace::GetOrAddBlockingController(EngineShard* shard) {
   if (!shard_blocking_controller_[shard->shard_id()]) {
     shard_blocking_controller_[shard->shard_id()] = make_unique<BlockingController>(shard, this);
   }
 
   return shard_blocking_controller_[shard->shard_id()].get();
-}
-
-BlockingController* Namespace::GetBlockingController(ShardId sid) {
-  return shard_blocking_controller_[sid].get();
 }
 
 Namespaces::Namespaces() {

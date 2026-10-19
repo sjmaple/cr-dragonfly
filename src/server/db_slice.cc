@@ -1475,6 +1475,10 @@ void DbSlice::Release(IntentLock::Mode mode, const KeyLockArgs& lock_args) {
 }
 
 bool DbSlice::IsLockFree(IntentLock::Mode mode, const KeyLockArgs& lock_args) const {
+  // Usually nothing is locked, so check it once rather than per key.
+  if (db_arr_[lock_args.db_index]->trans_locks.Size() == 0)
+    return true;
+
   for (LockFp fp : lock_args.fps) {
     if (!CheckLock(mode, lock_args.db_index, fp))
       return false;
