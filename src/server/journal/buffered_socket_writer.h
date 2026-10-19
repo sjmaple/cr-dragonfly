@@ -51,7 +51,7 @@ class BufferedSocketWriter {
 
   // Reports a write timeout if the in-flight write has not completed within timeout_usec.
   // For producers that pause below output_limit() and therefore never block in Throttle().
-  void CheckWriteTimeout(uint64_t timeout_usec);
+  void AbortOnWriteTimeout(uint64_t timeout_usec);
 
   void WaitForInflightToComplete(bool with_timeout);
 

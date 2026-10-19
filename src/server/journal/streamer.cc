@@ -248,7 +248,7 @@ void SlotMigrationStreamer::PaceTraversal(bool done) {
     ThisFiber::SleepFor(300us);
     // Pacing stops below output_limit, where Throttle() would detect a stuck socket. Checked
     // after sleeping, so completions of already finished writes have been processed.
-    writer_.CheckWriteTimeout(replication_timeout_usec_);
+    writer_.AbortOnWriteTimeout(replication_timeout_usec_);
 
     // We have a design bug in RealTimeAggregator that resets it measurements only when
     // the next sample is taken. So we add this sample to ensure cpu_aggregator_

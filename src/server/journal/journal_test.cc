@@ -233,7 +233,7 @@ class ControlledSocket : public util::fb2::EpollSocket {
 
 class BufferedSocketWriterTest : public BaseFamilyTest {};
 
-TEST_F(BufferedSocketWriterTest, CheckWriteTimeout) {
+TEST_F(BufferedSocketWriterTest, AbortOnWriteTimeout) {
   pp_->at(0)->Await([] {
     constexpr uint64_t kTimeoutUsec = 500'000;
     ControlledSocket socket;
@@ -247,13 +247,13 @@ TEST_F(BufferedSocketWriterTest, CheckWriteTimeout) {
       ThisFiber::SleepFor(50ms);
       writer.Write(string(512, 'x'));
       socket.Complete();
-      writer.CheckWriteTimeout(kTimeoutUsec);
+      writer.AbortOnWriteTimeout(kTimeoutUsec);
     }
     EXPECT_TRUE(cntx.IsRunning());
 
     // A write that stays in flight longer than the timeout fails the stream.
     ThisFiber::SleepFor(600ms);
-    writer.CheckWriteTimeout(kTimeoutUsec);
+    writer.AbortOnWriteTimeout(kTimeoutUsec);
     EXPECT_EQ(cntx.GetError().Format(), "BufferedSocketWriter write operation timeout");
     socket.Complete();
   });
