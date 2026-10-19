@@ -55,32 +55,9 @@ namespace dfly {
 using namespace std;
 using namespace util;
 
-namespace {
+LockTagOptions LockTagOptions::instance_;
 
-// Thread-local cache with static linkage.
-thread_local std::optional<LockTagOptions> locktag_lock_options;
-
-void InvalidateLockTagOptions() {
-  locktag_lock_options = nullopt;
-  detail::tl_lock_tag_options = nullptr;
-}
-
-}  // namespace
-
-namespace detail {
-
-__thread const LockTagOptions* tl_lock_tag_options = nullptr;
-
-}  // namespace detail
-
-void TEST_InvalidateLockTagOptions() {
-  InvalidateLockTagOptions();  // For test main thread
-  CHECK(shard_set != nullptr);
-  shard_set->pool()->AwaitBrief(
-      [](ShardId shard, ProactorBase* proactor) { InvalidateLockTagOptions(); });
-}
-
-const LockTagOptions& LockTagOptions::InitInstance() {
+void LockTagOptions::InitFromFlags() {
   string delimiter = absl::GetFlag(FLAGS_locktag_delimiter);
   if (delimiter.empty()) {
     delimiter = "{}";
@@ -91,15 +68,13 @@ const LockTagOptions& LockTagOptions::InitInstance() {
     exit(-1);
   }
 
-  locktag_lock_options = {
+  instance_ = {
       .enabled = absl::GetFlag(FLAGS_lock_on_hashtags),
       .open_locktag = delimiter[0],
       .close_locktag = delimiter[1],
       .skip_n_end_delimiters = absl::GetFlag(FLAGS_locktag_skip_n_end_delimiters),
       .prefix = absl::GetFlag(FLAGS_locktag_prefix),
   };
-  detail::tl_lock_tag_options = &*locktag_lock_options;
-  return *locktag_lock_options;
 }
 
 std::string_view LockTagOptions::Tag(std::string_view key) const {

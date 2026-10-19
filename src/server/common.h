@@ -43,16 +43,6 @@ class CommandId;
 struct ConnectionState;
 class Namespaces;
 
-struct LockTagOptions;
-
-namespace detail {
-
-// Caches LockTagOptions::instance() for the current thread. Unlike the options themselves, a raw
-// pointer is trivially destructible, so it can be read inline without a TLS init guard.
-extern __thread const LockTagOptions* tl_lock_tag_options;
-
-}  // namespace detail
-
 struct LockTagOptions {
   bool enabled = false;
   char open_locktag = '{';
@@ -63,16 +53,16 @@ struct LockTagOptions {
   // Returns the tag according to the rules defined by this options object.
   std::string_view Tag(std::string_view key) const;
 
-  // Called for every key that is sharded or locked.
+  // Called for every key that is sharded or locked. The options never change at runtime.
   static const LockTagOptions& instance() {
-    if (detail::tl_lock_tag_options != nullptr)
-      return *detail::tl_lock_tag_options;
-    return InitInstance();
+    return instance_;
   }
 
+  // Sets instance() from the flags. Called once at startup, and by tests that change the flags.
+  static void InitFromFlags();
+
  private:
-  // Builds the options of the current thread from the flags.
-  static const LockTagOptions& InitInstance();
+  static LockTagOptions instance_;
 };
 
 std::ostream& operator<<(std::ostream& os, const GlobalState& state);
