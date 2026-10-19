@@ -10,7 +10,6 @@
 #include <string>
 #include <vector>
 
-#include "base/logging.h"
 #include "server/common_types.h"
 #include "util/fibers/synchronization.h"
 
@@ -30,10 +29,7 @@ class Namespace {
 
   DbSlice& GetCurrentDbSlice();
 
-  DbSlice& GetDbSlice(ShardId sid) {
-    CHECK_LT(sid, shard_db_slices_.size());
-    return *shard_db_slices_[sid];
-  }
+  DbSlice& GetDbSlice(ShardId sid);
 
   BlockingController* GetOrAddBlockingController(EngineShard* shard);
 
